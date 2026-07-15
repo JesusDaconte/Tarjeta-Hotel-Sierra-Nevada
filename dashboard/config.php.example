@@ -1,0 +1,34 @@
+<?php
+/**
+ * Configuración del dashboard - Hotel Sierra Nevada
+ *
+ * 1) Copia este archivo como "config.php" (en la misma carpeta "dashboard/").
+ * 2) Rellena los valores con los datos de tu base de datos MySQL (cPanel > Base de datos MySQL).
+ * 3) Define la contraseña del usuario admin inicial (se hasheará automáticamente).
+ *
+ * ¡NO subas config.php a git! Está incluido en .gitignore.
+ */
+
+return [
+    // -------- Base de datos MySQL --------
+    'db' => [
+        'host'    => 'localhost',     // usualmente 'localhost' en cPanel
+        'name'    => 'hotel_sierra',   // nombre de la BD creada en cPanel
+        'user'    => 'hotel_user',     // usuario MySQL con acceso a esa BD
+        'pass'    => 'CAMBIA_ESTA_CLAVE', // contraseña del usuario MySQL
+        'charset' => 'utf8mb4',
+    ],
+
+    // -------- Usuario administrador inicial --------
+    // Solo se usa la primera vez (script setup.php) para crear el admin.
+    // Cambia estos datos la primera vez que entres al dashboard.
+    'admin' => [
+        'username' => 'admin',
+        'password' => 'sierranevada2024', // cámbiala en el primer login
+    ],
+
+    // -------- Seguridad --------
+    'session_name' => 'hsn_admin',
+    // Cambia esta cadena por una aleatoria larga (ej: 32 caracteres)
+    'session_secret' => 'CAMBIA_ESTO_POR_UNA_CADENA_ALEATORIA_LARGA_Y_SECRETA',
+];

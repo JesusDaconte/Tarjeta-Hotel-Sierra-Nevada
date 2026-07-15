@@ -1,0 +1,20 @@
+# Credenciales locales (NO subir)
+/dashboard/config.php
+
+# Archivos de setup temporal
+/dashboard/setup.php
+
+# Logs y temporales
+*.log
+*.tmp
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.sublime-*
