@@ -1,9 +1,8 @@
 <?php
 /**
- * Autenticación del panel admin:
- *  - sesión segura (HttpOnly, SameSite)
- *  - login con password_hash / password_verify
- *  - CSRF token por sesión
+ * Autenticación del panel admin (sin cookies/sesiones PHP):
+ *  - Token en header X-Session-Token (almacenado en localStorage)
+ *  - CSRF en header X-CSRF-Token (guardado en admin table)
  *  - rate-limit básico por IP (login_attempts)
  */
 
@@ -15,23 +14,29 @@ function cfg(string $key, $default = null) {
     return $c[$key] ?? $default;
 }
 
-function start_session(): void {
-    if (session_status() === PHP_SESSION_ACTIVE) return;
-    $name = cfg('session_name', 'hsn_admin');
-    session_name($name);
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-        'secure'   => !empty($_SERVER['HTTPS']),
-    ]);
-    session_start();
+function get_session_token(): ?string {
+    $h = $_SERVER['HTTP_X_SESSION_TOKEN'] ?? null;
+    if (!$h || !is_string($h) || strlen($h) > 128) return null;
+    return $h;
+}
+
+function get_csrf_token(): ?string {
+    $h = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+    if (!$h || !is_string($h) || strlen($h) > 128) return null;
+    return $h;
 }
 
 function is_logged_in(): bool {
-    start_session();
-    return !empty($_SESSION['admin_id']);
+    $token = get_session_token();
+    if (!$token) return false;
+    $stmt = db()->prepare(
+        'SELECT id, username FROM admin
+         WHERE session_token = ? AND session_expires_at > NOW() LIMIT 1'
+    );
+    $stmt->execute([$token]);
+    $row = $stmt->fetch();
+    if (!$row) return false;
+    return true;
 }
 
 function require_login(): void {
@@ -43,20 +48,19 @@ function require_login(): void {
     }
 }
 
-function csrf_token(): string {
-    start_session();
-    if (empty($_SESSION['csrf'])) {
-        $_SESSION['csrf'] = bin2hex(random_bytes(16));
-    }
-    return $_SESSION['csrf'];
+function csrf_token_from_db(): ?string {
+    $token = get_session_token();
+    if (!$token) return null;
+    $stmt = db()->prepare('SELECT csrf_token FROM admin WHERE session_token = ? AND session_expires_at > NOW() LIMIT 1');
+    $stmt->execute([$token]);
+    $row = $stmt->fetch();
+    return $row ? $row['csrf_token'] : null;
 }
 
 function csrf_check(): void {
-    start_session();
-    $token = $_SERVER['HTTP_X_CSRF_TOKEN']
-        ?? ($_POST['csrf'] ?? '')
-        ?? '';
-    if (!is_string($token) || !hash_equals($_SESSION['csrf'] ?? '', $token)) {
+    $token = get_csrf_token();
+    $expected = csrf_token_from_db();
+    if (!is_string($token) || !is_string($expected) || !hash_equals($expected, $token)) {
         http_response_code(403);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => 'csrf']);
@@ -65,8 +69,6 @@ function csrf_check(): void {
 }
 
 function client_ip(): string {
-    // En cPanel detrás de proxy, REMOTE_ADDR suele ser fiable. Si usas Cloudflare
-    // ajusta para leer HTTP_CF_CONNECTING_IP con cuidado.
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 }
 
@@ -85,7 +87,7 @@ function record_attempt(): void {
     $stmt->execute([client_ip()]);
 }
 
-function attempt_login(string $username, string $password): bool {
+function attempt_login(string $username, string $password) {
     if (too_many_attempts()) return false;
     record_attempt();
     $stmt = db()->prepare('SELECT id, password_hash FROM admin WHERE username = ? LIMIT 1');
@@ -94,28 +96,93 @@ function attempt_login(string $username, string $password): bool {
     if (!$row || !password_verify($password, $row['password_hash'])) {
         return false;
     }
-    // rehash si hace falta (bcrypt coste cambiado)
     if (password_needs_rehash($row['password_hash'], PASSWORD_DEFAULT)) {
         $new = password_hash($password, PASSWORD_DEFAULT);
         $u = db()->prepare('UPDATE admin SET password_hash = ? WHERE id = ?');
         $u->execute([$new, $row['id']]);
     }
-    start_session();
-    session_regenerate_id(true);
-    $_SESSION['admin_id']  = (int)$row['id'];
-    $_SESSION['admin_user'] = $username;
-    // limpiar intentos de esta IP
+    $session_token = bin2hex(random_bytes(32));
+    $csrf = bin2hex(random_bytes(16));
+    $expires = date('Y-m-d H:i:s', strtotime('+7 days'));
+    $upd = db()->prepare(
+        'UPDATE admin SET session_token = ?, session_expires_at = ?, csrf_token = ? WHERE id = ?'
+    );
+    $upd->execute([$session_token, $expires, $csrf, $row['id']]);
     $clean = db()->prepare('DELETE FROM login_attempts WHERE ip = ?');
     $clean->execute([client_ip()]);
-    return true;
+    return ['token' => $session_token, 'csrf' => $csrf];
 }
 
 function logout(): void {
-    start_session();
-    $_SESSION = [];
-    if (ini_get('session.use_cookies')) {
-        $p = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000, $p['path'], '', $p['secure'], $p['httponly']);
+    $token = get_session_token();
+    if ($token) {
+        $stmt = db()->prepare(
+            'UPDATE admin SET session_token = NULL, session_expires_at = NULL, csrf_token = NULL WHERE session_token = ?'
+        );
+        $stmt->execute([$token]);
     }
-    session_destroy();
+}
+
+function api_get_state(): array {
+    $token = get_session_token();
+    $csrf = csrf_token_from_db();
+    $stmt = db()->prepare('SELECT username FROM admin WHERE session_token = ? AND session_expires_at > NOW() LIMIT 1');
+    $stmt->execute([$token]);
+    $admin = $stmt->fetch();
+
+    $rows = db()->query('SELECT id, value_es, value_en FROM settings')->fetchAll();
+    $settings = [];
+    foreach ($rows as $r) {
+        $settings[$r['id']] = ['es' => $r['value_es'], 'en' => $r['value_en']];
+    }
+    $policies = db()->query('SELECT * FROM policies ORDER BY sort_order, id')->fetchAll();
+    $location = db()->query('SELECT * FROM location_items ORDER BY sort_order, id')->fetchAll();
+    $tours = [];
+    try { $tours = db()->query('SELECT * FROM tours ORDER BY sort_order, id')->fetchAll(); } catch (Throwable $e) {}
+    if (empty($tours)) {
+        $tagIcons = ['🥾', '🎯', '🐦', '🪶'];
+        $tags = [];
+        for ($i = 1; $i <= 4; $i++) {
+            $key = 'tour_tag_' . $i;
+            if (!empty($settings[$key]['es']) || !empty($settings[$key]['en'])) {
+                $tags[] = [
+                    'icon' => $tagIcons[$i - 1],
+                    'text_es' => $settings[$key]['es'] ?? '',
+                    'text_en' => $settings[$key]['en'] ?? '',
+                ];
+            }
+        }
+        $url = function ($k) use ($settings) { return $settings[$k]['es'] ?? $settings[$k]['en'] ?? ''; };
+        $tours[] = [
+            'id' => 0,
+            'title_es' => $settings['tour_title']['es'] ?? '',
+            'title_en' => $settings['tour_title']['en'] ?? '',
+            'description_es' => $settings['tour_desc']['es'] ?? '',
+            'description_en' => $settings['tour_desc']['en'] ?? '',
+            'reception_es' => $settings['tour_reception']['es'] ?? '',
+            'reception_en' => $settings['tour_reception']['en'] ?? '',
+            'image' => (function () use ($settings) {
+                $img = $settings['tour_image']['es'] ?? $settings['tour_image']['en'] ?? '';
+                if (empty($img) || $img === 'tour.jpeg') return 'uploads/tours/tour.jpeg';
+                return $img;
+            })(),
+            'tags_json' => json_encode($tags, JSON_UNESCAPED_UNICODE),
+            'info_label_es' => $settings['tour_info_label']['es'] ?? '',
+            'info_label_en' => $settings['tour_info_label']['en'] ?? '',
+            'info_url' => $url('tour_info_url'),
+            'whatsapp_label_es' => $settings['tour_whatsapp_label']['es'] ?? '',
+            'whatsapp_label_en' => $settings['tour_whatsapp_label']['en'] ?? '',
+            'whatsapp_url' => $url('tour_whatsapp_url'),
+            'sort_order' => 1,
+        ];
+    }
+    return [
+        'ok' => true,
+        'csrf' => $csrf,
+        'admin' => $admin ? $admin['username'] : null,
+        'settings' => $settings,
+        'policies' => $policies,
+        'location' => $location,
+        'tours' => $tours,
+    ];
 }

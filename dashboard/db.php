@@ -30,7 +30,9 @@ function db(): PDO {
     static $pdo = null;
     if ($pdo === null) {
         $cfg = load_config()['db'];
-        $dsn = "mysql:host={$cfg['host']};dbname={$cfg['name']};charset={$cfg['charset']}";
+        $dsn = empty($cfg['socket'])
+        ? "mysql:host={$cfg['host']};dbname={$cfg['name']};charset={$cfg['charset']}"
+        : "mysql:unix_socket={$cfg['socket']};dbname={$cfg['name']};charset={$cfg['charset']}";
         try {
             $pdo = new PDO($dsn, $cfg['user'], $cfg['pass'], [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,

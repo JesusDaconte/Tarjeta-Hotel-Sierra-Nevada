@@ -9,6 +9,16 @@
  *  Acción especial: POST {type:"change_password", data:{new_password}} -> requiere sesión.
  */
 
+session_name('hsn_admin');
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'httponly' => true,
+    'samesite' => 'Lax',
+    'secure' => false,
+]);
+session_start();
+
 require_once __DIR__ . '/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -23,8 +33,9 @@ $action = $body['type'] ?? $_GET['action'] ?? '';
 if ($action === 'login') {
     $u = (string)($body['data']['username'] ?? '');
     $p = (string)($body['data']['password'] ?? '');
-    if (attempt_login($u, $p)) {
-        echo json_encode(['ok' => true, 'csrf' => csrf_token()]);
+    $result = attempt_login($u, $p);
+    if ($result) {
+        echo json_encode(['ok' => true, 'token' => $result['token'], 'csrf' => $result['csrf']]);
     } else {
         http_response_code(401);
         echo json_encode(['ok' => false, 'error' => too_many_attempts()
@@ -36,7 +47,6 @@ if ($action === 'login') {
 
 // ----- A partir de aquí requiere sesión -----
 require_login();
-csrf_check();
 
 if ($method === 'GET') {
     return_full_state();
@@ -44,6 +54,7 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
+    csrf_check();
     switch ($action) {
         case 'settings':
             save_settings($body['data'] ?? []);
@@ -53,6 +64,9 @@ if ($method === 'POST') {
             break;
         case 'location':
             save_location($body['data'] ?? []);
+            break;
+        case 'tours':
+            save_tours($body['data'] ?? []);
             break;
         case 'change_password':
             $np = (string)($body['data']['new_password'] ?? '');
@@ -79,24 +93,8 @@ echo json_encode(['error' => 'Método no permitido']);
 // ============== Helpers ==============
 
 function return_full_state(): void {
-    // settings (map id => {es,en})
-    $rows = db()->query('SELECT id, value_es, value_en FROM settings')->fetchAll();
-    $settings = [];
-    foreach ($rows as $r) {
-        $settings[$r['id']] = ['es' => $r['value_es'], 'en' => $r['value_en']];
-    }
-    // policies
-    $st = db()->query('SELECT * FROM policies ORDER BY sort_order, id')->fetchAll();
-    // location
-    $li = db()->query('SELECT * FROM location_items ORDER BY sort_order, id')->fetchAll();
-    echo json_encode([
-        'ok'      => true,
-        'csrf'    => $_SESSION['csrf'] ?? null,
-        'admin'   => $_SESSION['admin_user'] ?? null,
-        'settings' => $settings,
-        'policies' => $st,
-        'location' => $li,
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $data = api_get_state();
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
 function save_settings(array $data): void {
@@ -149,6 +147,45 @@ function save_policies(array $items): void {
         $pdo->rollBack();
         http_response_code(500);
         echo json_encode(['error' => 'No se guardaron las políticas: ' . $e->getMessage()]);
+    }
+}
+
+function save_tours(array $items): void {
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $pdo->exec('DELETE FROM tours');
+        $ins = $pdo->prepare(
+            'INSERT INTO tours (title_es, title_en, description_es, description_en, reception_es, reception_en, image, tags_json, info_label_es, info_label_en, info_url, whatsapp_label_es, whatsapp_label_en, whatsapp_url, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $i = 0;
+        foreach ($items as $it) {
+            $tes = trim((string)($it['title_es'] ?? ''));
+            $ten = trim((string)($it['title_en'] ?? ''));
+            if ($tes === '' && $ten === '') continue;
+            $des = trim((string)($it['description_es'] ?? ''));
+            $den = trim((string)($it['description_en'] ?? ''));
+            $res = trim((string)($it['reception_es'] ?? ''));
+            $ren = trim((string)($it['reception_en'] ?? ''));
+            $img = trim((string)($it['image'] ?? ''));
+            $tags = isset($it['tags']) ? json_encode($it['tags'], JSON_UNESCAPED_UNICODE) : '[]';
+            $ile = trim((string)($it['info_label_es'] ?? ''));
+            $ien = trim((string)($it['info_label_en'] ?? ''));
+            $iur = trim((string)($it['info_url'] ?? ''));
+            $wle = trim((string)($it['whatsapp_label_es'] ?? ''));
+            $wen = trim((string)($it['whatsapp_label_en'] ?? ''));
+            $wur = trim((string)($it['whatsapp_url'] ?? ''));
+            $ord = (int)($it['sort_order'] ?? (++$i));
+            $ins->execute([$tes, $ten, $des, $den, $res, $ren, $img, $tags, $ile, $ien, $iur, $wle, $wen, $wur, $ord]);
+            $i++;
+        }
+        $pdo->commit();
+        echo json_encode(['ok' => true]);
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['error' => 'No se guardaron los tours: ' . $e->getMessage()]);
     }
 }
 

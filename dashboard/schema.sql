@@ -55,6 +55,9 @@ CREATE TABLE `admin` (
   `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(60) NOT NULL UNIQUE,
   `password_hash` VARCHAR(255) NOT NULL,
+  `session_token` VARCHAR(64) NULL,
+  `csrf_token` VARCHAR(64) NULL,
+  `session_expires_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -123,6 +126,7 @@ INSERT INTO `settings` (`id`, `value_es`, `value_en`) VALUES
 ('tour_info_url',       'https://linktr.ee/Maruamake', 'https://linktr.ee/Maruamake'),
 ('tour_whatsapp_label', 'Consultar por WhatsApp', 'Ask by WhatsApp'),
 ('tour_whatsapp_url',   'https://wa.me/573127417352?text=Hola,%20me%20interesa%20el%20tour%20a%20la%20Sierra%20Nevada', 'https://wa.me/573127417352?text=Hola,%20me%20interesa%20el%20tour%20a%20la%20Sierra%20Nevada'),
+('tour_image',          'uploads/tours/tour.jpeg', 'uploads/tours/tour.jpeg'),
 ('tour_tag_1', 'Trekking', 'Trekking'),
 ('tour_tag_2', 'Aventura', 'Adventure'),
 ('tour_tag_3', 'Avistamiento de aves', 'Bird watching'),
@@ -216,5 +220,30 @@ INSERT INTO `location_items` (`title_es`, `title_en`, `text_es`, `text_en`, `sor
  'A 5 minutos a pie para tomar el transporte al Parque Natural Tayrona.',
  'A 5-minute walk to catch transport to Tayrona Natural Park.',
  4);
+
+-- ---------------------------------------------------------------------
+-- Tabla: tours (CRUD de tours a la Sierra Nevada)
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `tours`;
+CREATE TABLE `tours` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `title_es` VARCHAR(200) NOT NULL DEFAULT '',
+  `title_en` VARCHAR(200) NOT NULL DEFAULT '',
+  `description_es` TEXT,
+  `description_en` TEXT,
+  `reception_es` VARCHAR(300) DEFAULT '',
+  `reception_en` VARCHAR(300) DEFAULT '',
+  `image` VARCHAR(500) DEFAULT '',
+  `tags_json` TEXT,
+  `info_label_es` VARCHAR(100) DEFAULT '',
+  `info_label_en` VARCHAR(100) DEFAULT '',
+  `info_url` VARCHAR(500) DEFAULT '',
+  `whatsapp_label_es` VARCHAR(100) DEFAULT '',
+  `whatsapp_label_en` VARCHAR(100) DEFAULT '',
+  `whatsapp_url` VARCHAR(500) DEFAULT '',
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -64,6 +64,7 @@
       injectSettings(data.settings);
       injectPolicies(data.policies);
       injectLocation(data.location);
+      injectTours(data.tours);
     } catch (e) {
       // silencioso: usamos el HTML estático como fallback
     }
@@ -71,32 +72,24 @@
 
   function injectSettings(s) {
     if (!s) return;
-    // Textos simples (data-key en elemento con data-es/data-en)
     Object.keys(s).forEach(function (key) {
       var val = s[key];
       if (!val) return;
       var els = document.querySelectorAll('[data-key="' + key + '"]');
       els.forEach(function (el) {
-        // Si es un input/textarea, actualizar value
         if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
           el.value = val[currentLang] || val.es || '';
-        } else {
-          // Actualizar data-es/data-en y el textContent visible si coincide con idioma actual
-          el.setAttribute('data-es', val.es || '');
-          el.setAttribute('data-en', val.en || '');
-          if (el.textContent.trim() === (el.getAttribute('data-' + currentLang) || '').trim()) {
-            // solo si parece que no ha sido editado por el usuario
-            el.textContent = val[currentLang] || val.es || '';
-          }
-        }
-        // Enlaces: si es <a>, actualizar href
-        if (el.tagName === 'A') {
+        } else if (el.tagName === 'A') {
           var url = val[currentLang] || val.es || '';
           if (url) el.href = url;
+        } else {
+          el.setAttribute('data-es', val.es || '');
+          el.setAttribute('data-en', val.en || '');
+          // Forzar actualización de texto siempre (no solo si coincide)
+          el.textContent = val[currentLang] || val.es || '';
         }
       });
     });
-    // Forzar re-aplicar idioma actual para que se vean los cambios
     applyLang(currentLang);
   }
 
@@ -129,8 +122,38 @@
     applyLang(currentLang);
   }
 
+  function injectTours(tours) {
+    if (!tours || !tours.length) return;
+    var panel = document.getElementById('panel-tour');
+    if (!panel) return;
+    panel.innerHTML = tours.map(function (t, i) {
+      var tags = [];
+      try { tags = JSON.parse(t.tags_json || '[]'); } catch (e) {}
+      var tagsHtml = tags.map(function (tag) {
+        return '<li>' +
+          esc(tag.icon || '') + ' <span data-es="' + esc(tag.text_es || '') + '" data-en="' + esc(tag.text_en || '') + '">' + esc(tag.text_es || '') + '</span></li>';
+      }).join('');
+      var te = t.title_es || '';
+      var ten = t.title_en || '';
+      return '<h2 class="panel__title" data-es="' + esc(te) + '" data-en="' + esc(ten) + '">' + esc(te) + '</h2>' +
+        '<article class="tour">' +
+        (t.image ? '<div class="tour__hero"><img src="' + esc(t.image) + '" alt="" class="tour__img" /></div>' : '') +
+        (tagsHtml ? '<ul class="tour__tags">' + tagsHtml + '</ul>' : '') +
+        (t.description_es ? '<p data-es="' + esc(t.description_es) + '" data-en="' + esc(t.description_en || '') + '">' + esc(t.description_es) + '</p>' : '') +
+        (t.reception_es ? '<p data-es="' + esc(t.reception_es) + '" data-en="' + esc(t.reception_en || '') + '">' + esc(t.reception_es) + '</p>' : '') +
+        '</article>' +
+        (t.info_url ? '<a class="btn btn--block btn--info" href="' + esc(t.info_url) + '" target="_blank" rel="noopener">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3 3 3 0 0 0 .6 1.8L5 10.5a3 3 0 0 0-1-.2 3 3 0 1 0 3 3l5-4.5 5 4.5a3 3 0 1 0 3-3 3 3 0 0 0-1 .2l-4.6-3.7A3 3 0 0 0 15 5a3 3 0 0 0-3-3zm0 14a1.5 1.5 0 0 0-1.5 1.5v3a1.5 1.5 0 0 0 3 0v-3A1.5 1.5 0 0 0 12 16z"/></svg>' +
+          '<span data-es="' + esc(t.info_label_es || 'Más información') + '" data-en="' + esc(t.info_label_en || 'More information') + '">' + esc(t.info_label_es || 'Más información') + '</span></a>' : '') +
+        (t.whatsapp_url ? '<a class="btn btn--block btn--whatsapp" href="' + esc(t.whatsapp_url) + '" target="_blank" rel="noopener">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm0 18.15h-.01a8.23 8.23 0 0 1-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23z"/></svg>' +
+          '<span data-es="' + esc(t.whatsapp_label_es || 'Consultar por WhatsApp') + '" data-en="' + esc(t.whatsapp_label_en || 'Ask by WhatsApp') + '">' + esc(t.whatsapp_label_es || 'Consultar por WhatsApp') + '</span></a>' : '');
+    }).join('');
+    applyLang(currentLang);
+  }
+
   function esc(s) {
-    return String(s == null ? ' : s)
+    return String(s == null ? '' : s)
       .replace(/&/g, '&')
       .replace(/</g, '<')
       .replace(/>/g, '>')
