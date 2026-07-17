@@ -12,6 +12,25 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" />
 <link rel="stylesheet" href="styles.css" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Guía de estancia · Hotel Sierra Nevada Santa Marta" />
+  <meta property="og:description" content="Guía práctica con información útil para tu estancia: horarios, wifi, políticas, ubicación y tour a la Sierra Nevada de Santa Marta, Colombia." />
+  <meta property="og:image" content="https://hotelsierranevadasantamarta.com/guia-del-hotel/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://hotelsierranevadasantamarta.com/guia-del-hotel/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CO" />
+  <meta property="og:site_name" content="Hotel Sierra Nevada" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Guía de estancia · Hotel Sierra Nevada Santa Marta" />
+  <meta name="twitter:description" content="Guía práctica con información útil para tu estancia: horarios, wifi, políticas, ubicación y tour a la Sierra Nevada." />
+  <meta name="twitter:image" content="https://hotelsierranevadasantamarta.com/guia-del-hotel/og-image.jpg" />
+
+  <link rel="preload" href="logo_hotel.webp" as="image" type="image/webp" />
 </head>
 <body>
 
@@ -40,7 +59,11 @@
       </button>
     </div>
     <div class="header__logo">
-      <img src="logo_hotel.png" alt="Hotel Sierra Nevada" />
+      <picture>
+        <source srcset="logo_hotel.webp" type="image/webp" />
+        <source srcset="logo_hotel.png" type="image/png" />
+        <img src="logo_hotel.png" alt="Hotel Sierra Nevada" />
+      </picture>
     </div>
     <h1 class="header__title">
       <span data-es="Bienvenidos a" data-en="Welcome to" data-key="header_title">Bienvenidos a</span>
@@ -173,7 +196,7 @@
 
     <article class="tour">
       <div class="tour__hero">
-        <img src="uploads/tours/tour.jpeg" alt="Tour Sierra Nevada de Santa Marta" class="tour__img" />
+        <img src="uploads/tours/tour.jpeg" alt="Tour Sierra Nevada de Santa Marta" class="tour__img" loading="lazy" />
       </div>
 
       <ul class="tour__tags">
@@ -205,7 +228,11 @@
     <h2 class="panel__title" data-es="Contacto" data-en="Contact" data-key="contact_title">Contacto</h2>
 
     <div class="contact-card">
-      <img src="logo_hotel.png" alt="Hotel Sierra Nevada" class="contact-card__logo" />
+      <picture>
+        <source srcset="logo_hotel.webp" type="image/webp" />
+        <source srcset="logo_hotel.png" type="image/png" />
+        <img src="logo_hotel.png" alt="Hotel Sierra Nevada" class="contact-card__logo" loading="lazy" />
+      </picture>
       <h3 data-key="contact_card_name">Hotel Sierra Nevada</h3>
       <p data-es="Su hogar en Santa Marta" data-en="Your home in Santa Marta" data-key="contact_card_tagline">Su hogar en Santa Marta</p>
       <p class="contact-card__addr" data-key="contact_card_addr">Calle 21 # 6-73, Centro Histórico<br>Santa Marta, Magdalena, Colombia</p>
@@ -229,7 +256,11 @@
 
   <!-- ESLOGAN -->
   <footer class="footer">
-    <img src="logo_hotel.png" alt="" class="footer__logo" />
+    <picture>
+      <source srcset="logo_hotel.webp" type="image/webp" />
+      <source srcset="logo_hotel.png" type="image/png" />
+      <img src="logo_hotel.png" alt="" class="footer__logo" loading="lazy" />
+    </picture>
     <p class="footer__slogan" data-es="“Tu hogar en el corazón del Caribe colombiano”" data-en="“Your home in the heart of the Colombian Caribbean”" data-key="footer_slogan">“Tu hogar en el corazón del Caribe colombiano”</p>
     <p class="footer__loc" data-key="footer_loc">Santa Marta · Colombia</p>
   </footer>

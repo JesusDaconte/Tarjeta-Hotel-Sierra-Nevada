@@ -58,7 +58,7 @@
   // ===== Cargar contenido desde API =====
   async function loadContent() {
     try {
-      var res = await fetch('/api/content.php', { cache: 'no-store' });
+      var res = await fetch('api/content.php', { cache: 'no-store' });
       var data = await res.json();
       if (!data.ok) return; // fallback al HTML estático
       injectSettings(data.settings);
