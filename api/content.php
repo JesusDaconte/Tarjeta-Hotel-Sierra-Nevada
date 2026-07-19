@@ -31,6 +31,12 @@ try {
             'SELECT title_es, title_en, description_es, description_en, reception_es, reception_en, image, tags_json, info_label_es, info_label_en, info_url, whatsapp_label_es, whatsapp_label_en, whatsapp_url FROM tours ORDER BY sort_order, id'
         )->fetchAll();
     } catch (Throwable $e) {}
+    $products = [];
+    try {
+        $products = db()->query(
+            'SELECT icon, name_es, name_en, price_es, price_en FROM products ORDER BY sort_order, id'
+        )->fetchAll();
+    } catch (Throwable $e) {}
 
     echo json_encode([
         'ok'       => true,
@@ -38,6 +44,7 @@ try {
         'policies' => $policies,
         'location' => $location,
         'tours'    => $tours,
+        'products' => $products,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(200);

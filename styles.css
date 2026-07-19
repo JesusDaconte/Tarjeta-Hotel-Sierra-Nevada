@@ -218,6 +218,32 @@ body {
 }
 .block p { font-size: .9rem; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
 
+/* ===== Products block ===== */
+.block--products { background: linear-gradient(135deg, #fff 0%, #f0f7ff 100%); border-color: #4a90d9; }
+.product-list { margin: 6px 0 0; padding: 0; }
+.product-list__item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.product-list__item:last-child { border-bottom: none; }
+.product__icon { font-size: 1.2rem; width: 30px; text-align: center; flex-shrink: 0; }
+.product__name { flex: 1; font-size: .9rem; font-weight: 500; color: var(--text); }
+.product__price {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--c-primary);
+  background: #fef0dd;
+  padding: 2px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.products__outro {
+  font-size: .85rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 8px;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
 /* Wi-Fi destacado */
 .block--wifi {
   background: linear-gradient(135deg, #fff 0%, #fff6ec 100%);

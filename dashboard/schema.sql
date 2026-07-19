@@ -246,4 +246,34 @@ CREATE TABLE `tours` (
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------------------------------------------------------------------
+-- Tabla: products (productos a la venta en recepción)
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `products`;
+CREATE TABLE `products` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `name_es` VARCHAR(200) NOT NULL DEFAULT '',
+  `name_en` VARCHAR(200) NOT NULL DEFAULT '',
+  `price_es` VARCHAR(50) NOT NULL DEFAULT '',
+  `price_en` VARCHAR(50) NOT NULL DEFAULT '',
+  `icon` VARCHAR(16) NOT NULL DEFAULT '🛍️',
+  `sort_order` INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Productos semilla
+INSERT INTO `products` (`icon`, `name_es`, `name_en`, `price_es`, `price_en`, `sort_order`) VALUES
+('💧', 'Agua', 'Water', '$3.000', '$3.000', 1),
+('🥤', 'Coca-Cola', 'Coca-Cola', '$5.000', '$5.000', 2),
+('⚡', 'Gatorade', 'Gatorade', '$6.000', '$6.000', 3),
+('🧴', 'Champú', 'Shampoo', '$5.000', '$5.000', 4),
+('🧼', 'Jabón de baño', 'Bath soap', '$5.000', '$5.000', 5),
+('🪒', 'Prestobarbas', 'Razors', '$5.000', '$5.000', 6),
+('🪥', 'Cepillos dentales', 'Toothbrushes', '$5.000', '$5.000', 7);
+
+-- Settings para el bloque de productos
+INSERT INTO `settings` (`id`, `value_es`, `value_en`) VALUES
+('block_products_title', 'Productos disponibles en recepción', 'Products available at reception'),
+('block_products_intro', 'Pensando en tu comodidad, en nuestra recepción encontrarás una selección de productos de primera necesidad y bebidas, entre ellos:', 'Thinking of your comfort, at our reception you will find a selection of essential products and beverages, including:'),
+('block_products_outro', 'Si necesitas alguno de estos productos, con gusto nuestro equipo de recepción estará disponible para ayudarte.', 'If you need any of these products, our reception team will be happy to help you.');
+
 SET FOREIGN_KEY_CHECKS = 1;

@@ -85,7 +85,7 @@
       }
       CSRF = data.csrf || CSRF;
       state = data;
-      renderGeneral(); renderInfo(); renderPolicies(); renderMap(); renderTours(); renderContact();
+      renderGeneral(); renderInfo(); renderPolicies(); renderMap(); renderTours(); renderProducts(); renderContact();
       $all('.loading').forEach(function (l) { l.parentNode.removeChild(l); });
 
       $('#loginSection').hidden = true;
@@ -180,6 +180,11 @@
       ['wifi_password',       'Contraseña Wi-Fi', false],
       ['wifi_hint',            'Pista del QR por piso', true],
     ]},
+    { title: 'Productos en recepción', hint: 'Textos del bloque de productos a la venta.', fields: [
+      ['block_products_title', 'Título del bloque', false],
+      ['block_products_intro', 'Texto introductorio', true],
+      ['block_products_outro', 'Texto de cierre', true],
+    ]},
     { title: 'Ubicación privilegiada (textos)', hint: 'Título y párrafo introductorio que aparecen en la pestaña Info.', fields: [
       ['location_intro_title', 'Título del bloque', false],
       ['location_intro_text',  'Párrafo introductorio', true],
@@ -251,6 +256,35 @@
         '<textarea data-loc="text_es">' + esc(p.text_es) + '</textarea></div>' +
       '<div><label class="field__flag">🇬🇧 Texto</label>' +
         '<textarea data-loc="text_en">' + esc(p.text_en) + '</textarea></div></div>' +
+      '<button class="items__del" data-del type="button">Eliminar</button></li>';
+  }
+
+  // ---------- Render: PRODUCTOS ----------
+  function renderProducts() {
+    var host = $('#panel-products');
+    var html = '<div class="group"><h2 class="group__title">Productos a la venta</h2>' +
+               '<p class="group__hint">Productos disponibles en recepción. Usa ↑ ↓ para reordenar. El ícono es un emoji.</p>' +
+               '<ul id="prodList" class="items">';
+    (state.products || []).forEach(function (p, i) { html += prodRow(p, i); });
+    html += '</ul><button class="items__add" id="prodAdd" type="button">+ Añadir producto</button></div>' +
+            '<button class="btn btn--save" id="saveProducts" type="button">Guardar productos</button>';
+    host.innerHTML = html;
+  }
+  function prodRow(p, i) {
+    return '<li data-i="' + i + '"><div class="items__head">' +
+      '<input class="icon-input" data-prod="icon" value="' + esc(p.icon || '🛍️') + '" maxlength="4" aria-label="Icono">' +
+      '<div class="items__reorder">' +
+        '<button type="button" data-up title="Subir"><svg viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z"/></svg></button>' +
+        '<button type="button" data-down title="Bajar"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></button>' +
+      '</div></div>' +
+      '<div class="field--two"><div><label class="field__flag">🇪🇸 Nombre</label>' +
+        '<input type="text" data-prod="name_es" value="' + esc(p.name_es || '') + '"></div>' +
+      '<div><label class="field__flag">🇬🇧 Nombre</label>' +
+        '<input type="text" data-prod="name_en" value="' + esc(p.name_en || '') + '"></div></div>' +
+      '<div class="field--two" style="margin-top:10px"><div><label class="field__flag">🇪🇸 Precio</label>' +
+        '<input type="text" data-prod="price_es" value="' + esc(p.price_es || '') + '"></div>' +
+      '<div><label class="field__flag">🇬🇧 Price</label>' +
+        '<input type="text" data-prod="price_en" value="' + esc(p.price_en || '') + '"></div></div>' +
       '<button class="items__del" data-del type="button">Eliminar</button></li>';
   }
 
@@ -373,7 +407,12 @@
       if (e.target.id === 'saveMap') { saveSettingsFrom('panel-map', 'saveMap', 'Ubicación guardada ✓'); return; }
       if (e.target.id === 'saveContact') { saveSettingsFrom('panel-contact', 'saveContact', 'Contacto guardado ✓'); return; }
       if (e.target.id === 'saveTours') { saveTours(); return; }
+      if (e.target.id === 'saveProducts') { saveProducts(); return; }
 
+      if (e.target.id === 'prodAdd') {
+        state.products.push({ icon: '🛍️', name_es: '', name_en: '', price_es: '', price_en: '', sort_order: state.products.length });
+        renderProducts(); return;
+      }
       if (e.target.id === 'polAdd') {
         state.policies.push({ icon: '✅', title_es: '', title_en: '', text_es: '', text_en: '', sort_order: state.policies.length });
         renderPolicies(); return;
@@ -399,6 +438,7 @@
         state[kind].splice(idx, 1);
         if (kind === 'policies') renderPolicies();
         else if (kind === 'location') renderInfo();
+        else if (kind === 'products') renderProducts();
         else renderTours();
         return;
       }
@@ -480,6 +520,7 @@
   function tour_kind_of(li) {
     if (li.closest('#polList')) return 'policies';
     if (li.closest('#tourList')) return 'tours';
+    if (li.closest('#prodList')) return 'products';
     return 'location';
   }
 
@@ -489,6 +530,7 @@
     var t = arr[idx]; arr[idx] = arr[ni]; arr[ni] = t;
     if (kind === 'policies') renderPolicies();
     else if (kind === 'tours') renderTours();
+    else if (kind === 'products') renderProducts();
     else renderInfo();
   }
 
@@ -552,6 +594,22 @@
     });
     var r = await api('policies', list);
     if (r.ok) { state.policies = list; toast('Políticas guardadas ✓', 'ok'); }
+    else toast(r.error || 'Error', 'err');
+  }
+
+  async function saveProducts() {
+    var list = $all('#prodList > li').map(function (li, i) {
+      return {
+        icon: $('[data-prod=icon]', li).value,
+        name_es: $('[data-prod=name_es]', li).value,
+        name_en: $('[data-prod=name_en]', li).value,
+        price_es: $('[data-prod=price_es]', li).value,
+        price_en: $('[data-prod=price_en]', li).value,
+        sort_order: i + 1,
+      };
+    });
+    var r = await api('products', list);
+    if (r.ok) { state.products = list; toast('Productos guardados ✓', 'ok'); }
     else toast(r.error || 'Error', 'err');
   }
 

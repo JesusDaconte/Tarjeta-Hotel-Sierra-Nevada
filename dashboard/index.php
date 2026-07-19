@@ -92,6 +92,10 @@ $logueado = is_logged_in();
         <svg viewBox="0 0 24 24"><path d="M17 2h-2v2h2v2.4A5.5 5.5 0 0 0 12.5 12V2h-2v20h2V13A5.5 5.5 0 0 0 17 18.6V21l-3 1.5V22h7v-2h-2v-2.4A5.5 5.5 0 0 0 21.5 12V2h-2v18M5 2H2v2h3v18l3-1.5V2L5 2z"/></svg>
         <span>Tours</span>
       </button>
+      <button class="nav__tab" data-panel="products">
+        <svg viewBox="0 0 24 24"><path d="M19 6h-2V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zM9 4h6v2H9V4zm10 16H5V8h14v12z"/><path d="M7 10h2v6H7zm4 0h2v6h-2zm4 0h2v6h-2z"/></svg>
+        <span>Productos</span>
+      </button>
       <button class="nav__tab" data-panel="contact">
         <svg viewBox="0 0 24 24"><path d="M4 2h16a2 2 0 0 1 2 2v18H6a4 4 0 0 1-4-4V4a2 2 0 0 1 2-2zm0 2v10h18V4H4z"/><path fill="none" d="M0 0h24v24H0z"/></svg>
         <span>Contacto</span>
@@ -116,6 +120,10 @@ $logueado = is_logged_in();
     </section>
     <!-- PANEL TOURS -->
     <section id="panel-tours" class="panel">
+      <div class="loading">Cargando…</div>
+    </section>
+    <!-- PANEL PRODUCTOS -->
+    <section id="panel-products" class="panel">
       <div class="loading">Cargando…</div>
     </section>
     <!-- PANEL CONTACTO -->

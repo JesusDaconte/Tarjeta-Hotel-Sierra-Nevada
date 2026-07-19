@@ -68,6 +68,9 @@ if ($method === 'POST') {
         case 'tours':
             save_tours($body['data'] ?? []);
             break;
+        case 'products':
+            save_products($body['data'] ?? []);
+            break;
         case 'change_password':
             $np = (string)($body['data']['new_password'] ?? '');
             if (strlen($np) < 6) {
@@ -186,6 +189,36 @@ function save_tours(array $items): void {
         $pdo->rollBack();
         http_response_code(500);
         echo json_encode(['error' => 'No se guardaron los tours: ' . $e->getMessage()]);
+    }
+}
+
+function save_products(array $items): void {
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $pdo->exec('DELETE FROM products');
+        $ins = $pdo->prepare(
+            'INSERT INTO products (icon, name_es, name_en, price_es, price_en, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $i = 0;
+        foreach ($items as $it) {
+            $icon = mb_substr(trim((string)($it['icon'] ?? '🛍️')), 0, 16);
+            $nes  = trim((string)($it['name_es'] ?? ''));
+            $nen  = trim((string)($it['name_en'] ?? ''));
+            $pes  = trim((string)($it['price_es'] ?? ''));
+            $pen  = trim((string)($it['price_en'] ?? ''));
+            $ord  = (int)($it['sort_order'] ?? (++$i));
+            if ($nes === '' && $nen === '') continue;
+            $ins->execute([$icon, $nes, $nen, $pes, $pen, $ord]);
+            $i++;
+        }
+        $pdo->commit();
+        echo json_encode(['ok' => true]);
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['error' => 'No se guardaron los productos: ' . $e->getMessage()]);
     }
 }
 

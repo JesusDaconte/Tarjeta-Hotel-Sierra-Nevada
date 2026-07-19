@@ -65,6 +65,7 @@
       injectPolicies(data.policies);
       injectLocation(data.location);
       injectTours(data.tours);
+      injectProducts(data.products);
     } catch (e) {
       // silencioso: usamos el HTML estático como fallback
     }
@@ -148,6 +149,20 @@
         (t.whatsapp_url ? '<a class="btn btn--block btn--whatsapp" href="' + esc(t.whatsapp_url) + '" target="_blank" rel="noopener">' +
           '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm0 18.15h-.01a8.23 8.23 0 0 1-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23z"/></svg>' +
           '<span data-es="' + esc(t.whatsapp_label_es || 'Consultar por WhatsApp') + '" data-en="' + esc(t.whatsapp_label_en || 'Ask by WhatsApp') + '">' + esc(t.whatsapp_label_es || 'Consultar por WhatsApp') + '</span></a>' : '');
+    }).join('');
+    applyLang(currentLang);
+  }
+
+  function injectProducts(products) {
+    if (!products || !products.length) return;
+    var list = document.getElementById('productList');
+    if (!list) return;
+    list.innerHTML = products.map(function (p) {
+      return '<div class="product-list__item">' +
+        '<span class="product__icon">' + esc(p.icon || '🛍️') + '</span>' +
+        '<span class="product__name" data-es="' + esc(p.name_es) + '" data-en="' + esc(p.name_en || p.name_es) + '">' + esc(p.name_es) + '</span>' +
+        '<span class="product__price" data-es="' + esc(p.price_es) + '" data-en="' + esc(p.price_en || p.price_es) + '">' + esc(p.price_es) + '</span>' +
+        '</div>';
     }).join('');
     applyLang(currentLang);
   }

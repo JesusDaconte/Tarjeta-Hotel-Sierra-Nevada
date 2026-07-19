@@ -139,6 +139,8 @@ function api_get_state(): array {
     $location = db()->query('SELECT * FROM location_items ORDER BY sort_order, id')->fetchAll();
     $tours = [];
     try { $tours = db()->query('SELECT * FROM tours ORDER BY sort_order, id')->fetchAll(); } catch (Throwable $e) {}
+    $products = [];
+    try { $products = db()->query('SELECT * FROM products ORDER BY sort_order, id')->fetchAll(); } catch (Throwable $e) {}
     if (empty($tours)) {
         $tagIcons = ['🥾', '🎯', '🐦', '🪶'];
         $tags = [];
@@ -184,5 +186,6 @@ function api_get_state(): array {
         'policies' => $policies,
         'location' => $location,
         'tours' => $tours,
+        'products' => $products,
     ];
 }
